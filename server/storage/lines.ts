@@ -22,8 +22,8 @@ export class LineStorage {
 
   async createLine(line: InsertLine): Promise<Line> {
     const db = await getDb();
-    await db.insert(lines).values(line);
-    const result = await db.select().from(lines).where(eq(lines.number, line.number)).limit(1);
+    const [resultHeader] = await db.insert(lines).values(line);
+    const result = await db.select().from(lines).where(eq(lines.id, resultHeader.insertId)).limit(1);
     return result[0];
   }
 

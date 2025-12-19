@@ -64,4 +64,25 @@ export class MessageStorage {
 
     return Array.from(conversations.values());
   }
+
+  async deleteConversation(userId1: number, userId2: number): Promise<void> {
+    const db = await getDb();
+    await db.delete(messages).where(
+      or(
+        and(eq(messages.senderId, userId1), eq(messages.receiverId, userId2)),
+        and(eq(messages.senderId, userId2), eq(messages.receiverId, userId1))
+      )
+    );
+  }
+
+  async deleteMultipleConversations(userId: number, otherUserIds: number[]): Promise<void> {
+    if (otherUserIds.length === 0) return;
+    const db = await getDb();
+    await db.delete(messages).where(
+      or(
+        and(eq(messages.senderId, userId), sql`${messages.receiverId} IN (${sql.join(otherUserIds)})`),
+        and(eq(messages.receiverId, userId), sql`${messages.senderId} IN (${sql.join(otherUserIds)})`)
+      )
+    );
+  }
 }

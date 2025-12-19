@@ -4,6 +4,12 @@ import { type InsertLineRequest, type LineRequest } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
 export class LineRequestStorage {
+  async getLineRequest(id: number): Promise<LineRequest | undefined> {
+    const db = await getDb();
+    const result = await db.select().from(lineRequests).where(eq(lineRequests.id, id));
+    return result[0];
+  }
+
   async createLineRequest(request: InsertLineRequest): Promise<LineRequest> {
     const db = await getDb();
     await db.insert(lineRequests).values(request);

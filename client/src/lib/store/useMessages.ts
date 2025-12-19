@@ -99,6 +99,50 @@ export function useMessages(user: User | null, users: User[]) {
     }
   };
 
+  const deleteConversation = async (otherUserId: string): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const res = await fetch(`/api/messages/${otherUserId}?userId=${user.id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setConversations(prev => prev.filter(c => c.userId !== otherUserId));
+        if (selectedConversation === otherUserId) {
+          setSelectedConversation(null);
+          setMessages([]);
+        }
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      return false;
+    }
+  };
+
+  const bulkDeleteConversations = async (otherUserIds: string[]): Promise<boolean> => {
+    if (!user || otherUserIds.length === 0) return false;
+    try {
+      const res = await fetch('/api/messages/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, otherUserIds }),
+      });
+      if (res.ok) {
+        setConversations(prev => prev.filter(c => !otherUserIds.includes(c.userId)));
+        if (selectedConversation && otherUserIds.includes(selectedConversation)) {
+          setSelectedConversation(null);
+          setMessages([]);
+        }
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to bulk delete:', error);
+      return false;
+    }
+  };
+
   return {
     messages,
     setMessages,
@@ -107,6 +151,8 @@ export function useMessages(user: User | null, users: User[]) {
     selectedConversation,
     setSelectedConversation,
     sendMessage,
-    markAsRead
+    markAsRead,
+    deleteConversation,
+    bulkDeleteConversations
   };
 }

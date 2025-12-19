@@ -13,8 +13,20 @@ import {
   PlusCircle,
   BarChart,
   Settings,
-  List
+  List,
+  ChevronDown,
+  ChevronRight,
+  ShieldCheck,
+  Building2,
+  History,
+  Activity,
+  UserCog
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "./ui/collapsible";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
@@ -41,24 +53,47 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ? conversations.reduce((acc, c) => acc + c.unread, 0)
     : messages.filter(m => m.receiverId === user.id && !m.read).length;
 
-  const NavItem = ({ href, icon: Icon, label, badge }: { href: string, icon: any, label: string, badge?: number }) => (
+  const NavItem = ({ href, icon: Icon, label, badge, indent }: { href: string, icon: any, label: string, badge?: number, indent?: boolean }) => (
     <Link href={href}>
       <div className={cn(
         "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer relative",
+        indent && "ml-4",
         location === href
           ? "bg-primary/10 text-primary"
           : "text-muted-foreground hover:bg-muted hover:text-foreground"
       )}>
-        <Icon className="h-4 w-4" />
-        <span className="flex-1">{label}</span>
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="flex-1 truncate">{label}</span>
         {badge ? (
-          <Badge variant="destructive" className="h-5 w-5 flex items-center justify-center p-0 text-[10px] rounded-full">
+          <Badge variant="destructive" className="h-5 w-5 flex items-center justify-center p-0 text-[10px] rounded-full shrink-0">
             {badge}
           </Badge>
         ) : null}
       </div>
     </Link>
   );
+
+  const NavGroup = ({ label, icon: Icon, children, active }: { label: string, icon: any, children: React.ReactNode, active?: boolean }) => {
+    const [isOpen, setIsOpen] = useState(active);
+
+    return (
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
+        <CollapsibleTrigger asChild>
+          <div className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground",
+            isOpen && "text-foreground"
+          )}>
+            <Icon className="h-4 w-4 shrink-0" />
+            <span className="flex-1">{label}</span>
+            {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-1 mt-1">
+          {children}
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -74,41 +109,79 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      <div className="flex-1 py-6 px-3 space-y-1">
+      <div className="flex-1 py-6 px-3 space-y-4 overflow-y-auto">
         {user.role === 'subsidiary' && (
           <>
-            <NavItem href="/" icon={LayoutDashboard} label="Tableau de bord" />
-            <NavItem href="/chat" icon={MessageCircle} label="Messages" badge={unreadCount} />
-            <NavItem href="/all-lines" icon={Phone} label="Toutes les lignes" />
-            <NavItem href="/settings" icon={Users} label="Paramètres" />
+            <div className="space-y-1">
+              <p className="px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Général</p>
+              <NavItem href="/" icon={LayoutDashboard} label="Tableau de bord" />
+              <NavItem href="/chat" icon={MessageCircle} label="Messages" badge={unreadCount} />
+            </div>
+            <div className="space-y-1">
+              <p className="px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Ressources</p>
+              <NavItem href="/all-lines" icon={Phone} label="Toutes les lignes" />
+            </div>
+            <div className="space-y-1">
+              <p className="px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Système</p>
+              <NavItem href="/settings" icon={Settings} label="Paramètres" />
+            </div>
           </>
         )}
 
         {user.role === 'admin' && (
           <>
-            <NavItem href="/admin" icon={LayoutDashboard} label="Aperçu" />
-            <NavItem href="/admin/messages" icon={MessageCircle} label="Messages" badge={unreadCount} />
-            <NavItem href="/admin/faults" icon={AlertTriangle} label="Pannes" />
-            <NavItem href="/admin/line-requests" icon={PlusCircle} label="Demandes de lignes" />
-            <NavItem href="/admin/lines" icon={Phone} label="Toutes les lignes" />
-            <NavItem href="/admin/line-types" icon={Phone} label="Types de lignes" />
-            <NavItem href="/admin/users" icon={Users} label="Gestion des utilisateurs" />
-            <NavItem href="/admin/subsidiaries" icon={Users} label="Filiales" />
-            <NavItem href="/admin/history" icon={ClipboardList} label="Historique des interventions" />
-            <NavItem href="/admin/reports" icon={FileText} label="Statistiques" />
-            <NavItem href="/admin/settings" icon={Users} label="Paramètres" />
+            <NavGroup label="Tableau de bord" icon={LayoutDashboard} active={location === '/admin' || location === '/admin/reports'}>
+              <NavItem href="/admin" icon={Activity} label="Aperçu" indent />
+              <NavItem href="/admin/reports" icon={FileText} label="Statistiques" indent />
+            </NavGroup>
+
+            <NavGroup label="Communication" icon={MessageCircle} active={location === '/admin/messages'}>
+              <NavItem href="/admin/messages" icon={MessageCircle} label="Messages" badge={unreadCount} indent />
+            </NavGroup>
+
+            <NavGroup label="Gestion des Lignes" icon={Phone} active={['/admin/lines', '/admin/line-types', '/admin/line-requests', '/admin/faults'].includes(location)}>
+              <NavItem href="/admin/lines" icon={Phone} label="Toutes les lignes" indent />
+              <NavItem href="/admin/line-types" icon={List} label="Types de lignes" indent />
+              <NavItem href="/admin/line-requests" icon={PlusCircle} label="Demandes de lignes" indent />
+              <NavItem href="/admin/faults" icon={AlertTriangle} label="Pannes" indent />
+            </NavGroup>
+
+            <NavGroup label="Infrastructure" icon={ShieldCheck} active={['/admin/users', '/admin/subsidiaries'].includes(location)}>
+              <NavItem href="/admin/users" icon={UserCog} label="Utilisateurs" indent />
+              <NavItem href="/admin/subsidiaries" icon={Building2} label="Filiales" indent />
+            </NavGroup>
+
+            <NavGroup label="Historique" icon={History} active={location === '/admin/history'}>
+              <NavItem href="/admin/history" icon={ClipboardList} label="Interventions" indent />
+            </NavGroup>
+
+            <div className="pt-4 mt-4 border-t border-sidebar-border">
+              <NavItem href="/admin/settings" icon={Settings} label="Paramètres" />
+            </div>
           </>
         )}
 
         {user.role === 'maintenance' && (
           <>
-            <NavItem href="/maintenance" icon={ClipboardList} label="Bons de travail" />
-            <NavItem href="/maintenance/requests" icon={List} label="Demandes de lignes" />
-            <NavItem href="/maintenance/lines" icon={Phone} label="Gestion des lignes" />
-            <NavItem href="/maintenance/statistics" icon={BarChart} label="Statistiques" />
-            <NavItem href="/maintenance/history" icon={FileText} label="Historique des interventions" />
-            <NavItem href="/chat" icon={MessageCircle} label="Messages" badge={unreadCount} />
-            <NavItem href="/maintenance/settings" icon={Users} label="Paramètres" />
+            <NavGroup label="Interventions" icon={ClipboardList} active={['/maintenance', '/maintenance/history'].includes(location)}>
+              <NavItem href="/maintenance" icon={ClipboardList} label="Bons de travail" indent />
+              <NavItem href="/maintenance/history" icon={FileText} label="Historique" indent />
+            </NavGroup>
+
+            <NavGroup label="Gestion des Lignes" icon={Phone} active={['/maintenance/requests', '/maintenance/lines'].includes(location)}>
+              <NavItem href="/maintenance/requests" icon={List} label="Demandes" indent />
+              <NavItem href="/maintenance/lines" icon={Phone} label="Toutes les lignes" indent />
+            </NavGroup>
+
+            <div className="space-y-1">
+              <p className="px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Analyse & Comm</p>
+              <NavItem href="/maintenance/statistics" icon={BarChart} label="Statistiques" />
+              <NavItem href="/chat" icon={MessageCircle} label="Messages" badge={unreadCount} />
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-sidebar-border">
+              <NavItem href="/maintenance/settings" icon={Settings} label="Paramètres" />
+            </div>
           </>
         )}
       </div>

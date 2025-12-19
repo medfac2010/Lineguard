@@ -37,7 +37,8 @@ export interface IStorage {
   createLineType(lineType: InsertLineType): Promise<LineType>;
   updateLineType(id: number, title: string): Promise<LineType>;
   deleteLineType(id: number): Promise<void>;
-
+  
+  getLineRequest(id: number): Promise<LineRequest | undefined>;
   createLineRequest(request: InsertLineRequest): Promise<LineRequest>;
   listLineRequests(): Promise<LineRequest[]>;
   updateLineRequestStatus(id: number, status: string, rejectionReason?: string, assignedNumber?: string): Promise<LineRequest>;
@@ -48,4 +49,6 @@ export interface IStorage {
   getUnreadCount(userId: number): Promise<number>;
   markMessagesAsRead(senderId: number, receiverId: number): Promise<void>;
   listConversations(userId: number): Promise<{ userId: number, unread: number, lastMessage: Message }[]>;
+  deleteConversation(userId1: number, userId2: number): Promise<void>;
+  deleteMultipleConversations(userId: number, otherUserIds: number[]): Promise<void>;
 }

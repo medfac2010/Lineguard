@@ -44,6 +44,8 @@ interface AppContextType extends AppState {
   sendMessage: (receiverId: string, content: string) => Promise<boolean>;
   markAsRead: (senderId: string) => Promise<void>;
   setSelectedConversation: (userId: string | null) => void;
+  deleteConversation: (otherUserId: string) => Promise<boolean>;
+  bulkDeleteConversations: (otherUserIds: string[]) => Promise<boolean>;
   // Line Requests
   createLineRequest: (requestedType: string, subsidiaryId: string, adminId: string) => Promise<boolean>;
   approveLineRequest: (id: string, assignedNumber: string) => Promise<boolean>;
@@ -65,7 +67,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { subsidiaries, setSubsidiaries, fetchSubsidiaries, addSubsidiary, updateSubsidiary, deleteSubsidiary } = useSubsidiaries();
   const { lines, setLines, lineTypes, setLineTypes, fetchLinesData, addLine, deleteLine, toggleLineInFaultFlow, setLineStatus, addLineType, updateLineType, deleteLineType } = useLines();
   const { faults, setFaults, fetchFaults, declareFault, confirmWorking, assignFault, resolveFault, updateFaultFeedback } = useFaults(user, lines, setLines);
-  const { messages, setMessages, conversations, setConversations, selectedConversation, setSelectedConversation, sendMessage, markAsRead } = useMessages(user, users);
+  const { messages, setMessages, conversations, setConversations, selectedConversation, setSelectedConversation, sendMessage, markAsRead, deleteConversation, bulkDeleteConversations } = useMessages(user, users);
   const { lineRequests, setLineRequests, fetchLineRequests, createLineRequest, approveLineRequest, rejectLineRequest, deleteLineRequest } = useLineRequests(setLines);
 
   // Load initial data
@@ -109,6 +111,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addLine, deleteLine, toggleLineInFaultFlow, setLineStatus,
     addLineType, updateLineType, deleteLineType,
     sendMessage, markAsRead, setSelectedConversation,
+    deleteConversation, bulkDeleteConversations,
     createLineRequest, approveLineRequest, rejectLineRequest, deleteLineRequest,
     updateFaultFeedback
   };

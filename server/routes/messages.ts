@@ -53,4 +53,33 @@ export function registerMessageRoutes(app: Express) {
       res.status(500).json({ error: "Failed to mark messages as read" });
     }
   });
+
+  app.delete("/api/messages/:otherUserId", async (req, res) => {
+    try {
+      const userId = Number(req.query.userId);
+      const otherUserId = Number(req.params.otherUserId);
+      if (!userId) return res.status(400).json({ error: "User ID required" });
+
+      await storage.deleteConversation(userId, otherUserId);
+      res.json({ ok: true });
+    } catch (error: any) {
+      console.error("Error deleting conversation:", error);
+      res.status(500).json({ error: "Failed to delete conversation" });
+    }
+  });
+
+  app.post("/api/messages/bulk-delete", async (req, res) => {
+    try {
+      const { userId, otherUserIds } = req.body;
+      if (!userId || !otherUserIds || !Array.isArray(otherUserIds)) {
+        return res.status(400).json({ error: "User ID and array of otherUserIds required" });
+      }
+
+      await storage.deleteMultipleConversations(Number(userId), otherUserIds.map(Number));
+      res.json({ ok: true });
+    } catch (error: any) {
+      console.error("Error bulk deleting conversations:", error);
+      res.status(500).json({ error: "Failed to bulk delete conversations" });
+    }
+  });
 }

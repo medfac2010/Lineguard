@@ -37,8 +37,7 @@ export function registerLineRequestRoutes(app: Express) {
         return res.status(400).json({ error: "Assigned number is required for approval" });
       }
 
-      const requests = await storage.listLineRequests();
-      const request = requests.find(r => r.id === requestId);
+      const request = await storage.getLineRequest(requestId);
 
       if (!request) return res.status(404).json({ error: "Request not found" });
       if (request.status !== "pending") return res.status(400).json({ error: "Request already processed" });
