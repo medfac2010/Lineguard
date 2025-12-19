@@ -11,7 +11,7 @@ let dbInstance: any = null;
 async function initializeDb() {
   if (dbInstance) return dbInstance;
   try {
-    const connection = await mysql.createConnection(process.env.DATABASE_URL);
+    const connection = await mysql.createConnection(dbUrl!);
     dbInstance = drizzle(connection);
     return dbInstance;
   } catch (error) {

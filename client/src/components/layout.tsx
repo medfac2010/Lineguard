@@ -9,7 +9,11 @@ import {
   Menu,
   ClipboardList,
   FileText,
-  MessageCircle
+  MessageCircle,
+  PlusCircle,
+  BarChart,
+  Settings,
+  List
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -85,6 +89,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <NavItem href="/admin" icon={LayoutDashboard} label="Aperçu" />
             <NavItem href="/admin/messages" icon={MessageCircle} label="Messages" badge={unreadCount} />
             <NavItem href="/admin/faults" icon={AlertTriangle} label="Pannes" />
+            <NavItem href="/admin/line-requests" icon={PlusCircle} label="Demandes de lignes" />
             <NavItem href="/admin/lines" icon={Phone} label="Toutes les lignes" />
             <NavItem href="/admin/line-types" icon={Phone} label="Types de lignes" />
             <NavItem href="/admin/users" icon={Users} label="Gestion des utilisateurs" />
@@ -98,6 +103,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {user.role === 'maintenance' && (
           <>
             <NavItem href="/maintenance" icon={ClipboardList} label="Bons de travail" />
+            <NavItem href="/maintenance/requests" icon={List} label="Demandes de lignes" />
+            <NavItem href="/maintenance/lines" icon={Phone} label="Gestion des lignes" />
+            <NavItem href="/maintenance/statistics" icon={BarChart} label="Statistiques" />
             <NavItem href="/maintenance/history" icon={FileText} label="Historique des interventions" />
             <NavItem href="/chat" icon={MessageCircle} label="Messages" badge={unreadCount} />
             <NavItem href="/maintenance/settings" icon={Users} label="Paramètres" />

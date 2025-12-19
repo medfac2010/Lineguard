@@ -24,6 +24,10 @@ import MaintenanceHistory from "@/pages/maintenance/history";
 import SubsidiaryAllLines from "@/pages/subsidiary/all-lines";
 import AdminMessages from "@/pages/admin/messages";
 import UserChat from "@/pages/chat";
+import AdminLineRequests from "@/pages/admin/line-requests";
+import MaintenanceRequests from "@/pages/maintenance/requests";
+import MaintenanceStatistics from "@/pages/maintenance/statistics";
+import MaintenanceLines from "@/pages/maintenance/lines";
 
 function AppContent() {
   return (
@@ -42,6 +46,7 @@ function AppContent() {
         {/* Admin Routes */}
         <Route path="/admin" component={AdminDashboard} />
         <Route path="/admin/faults" component={AdminFaults} />
+        <Route path="/admin/line-requests" component={AdminLineRequests} />
         <Route path="/admin/lines" component={AdminLines} />
         <Route path="/admin/line-types" component={AdminLineTypes} />
         <Route path="/admin/users" component={AdminUsers} />
@@ -53,6 +58,9 @@ function AppContent() {
 
         {/* Maintenance Routes */}
         <Route path="/maintenance" component={MaintenanceDashboard} />
+        <Route path="/maintenance/requests" component={MaintenanceRequests} />
+        <Route path="/maintenance/statistics" component={MaintenanceStatistics} />
+        <Route path="/maintenance/lines" component={MaintenanceLines} />
         <Route path="/maintenance/history" component={MaintenanceHistory} />
         <Route path="/maintenance/settings" component={MaintenanceSettings} />
 

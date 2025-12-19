@@ -15,7 +15,7 @@ export interface LineTypeDefinition {
 }
 
 export type LineType = string;
-export type LineStatus = 'working' | 'faulty' | 'maintenance' | 'archived';
+export type LineStatus = 'working' | 'faulty' | 'maintenance' | 'archived' | 'out_of_service';
 
 export interface Line {
   id: string;
@@ -56,4 +56,15 @@ export interface Message {
   content: string;
   read: boolean;
   timestamp: string; // ISO date
+}
+
+export interface LineRequest {
+  id: string;
+  subsidiaryId: string;
+  requestedNumber: string;
+  adminId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
+  createdAt: string;
+  respondedAt?: string;
 }

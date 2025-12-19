@@ -14,10 +14,11 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
 export default function MaintenanceDashboard() {
-  const { user, faults, lines, resolveFault, subsidiaries } = useApp();
+  const { user, faults, lines, resolveFault, subsidiaries, updateFaultFeedback } = useApp();
   const { toast } = useToast();
-  
+
   const [completingFaultId, setCompletingFaultId] = useState<string | null>(null);
+  const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState("");
 
   const myTasks = faults.filter(f => f.assignedTo === user?.id && f.status === 'assigned');
@@ -34,6 +35,23 @@ export default function MaintenanceDashboard() {
       setCompletingFaultId(null);
       setFeedback("");
     }
+  };
+
+  const handleUpdateFeedback = () => {
+    if (editingFeedbackId && feedback) {
+      updateFaultFeedback(editingFeedbackId, feedback);
+      toast({
+        title: "Updated",
+        description: "Feedback updated successfully."
+      });
+      setEditingFeedbackId(null);
+      setFeedback("");
+    }
+  };
+
+  const startEditFeedback = (fault: any) => {
+    setEditingFeedbackId(fault.id);
+    setFeedback(fault.feedback || "");
   };
 
   const getLineDetails = (lineId: string) => lines.find(l => l.id === lineId);
@@ -101,7 +119,7 @@ export default function MaintenanceDashboard() {
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Work Orders");
-    
+
     worksheet['!cols'] = [
       { wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 12 },
       { wch: 12 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 10 }
@@ -124,19 +142,19 @@ export default function MaintenanceDashboard() {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-primary" />
-               travail actifs
+              travail actifs
             </CardTitle>
             <div className="flex gap-2">
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 variant="outline"
                 onClick={exportToPDF}
               >
                 <FileText className="h-4 w-4 mr-1" />
                 Exporté en PDF
               </Button>
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 variant="outline"
                 onClick={exportToExcel}
               >
@@ -161,7 +179,7 @@ export default function MaintenanceDashboard() {
               {myTasks.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  Aucun Bon de travail en cours. Excellent travail !
+                    Aucun Bon de travail en cours. Excellent travail !
                   </TableCell>
                 </TableRow>
               ) : (
@@ -197,6 +215,59 @@ export default function MaintenanceDashboard() {
         </CardContent>
       </Card>
 
+      {/* Completed Tasks */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            Tâches Terminées
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date Resolved</TableHead>
+                <TableHead>Line</TableHead>
+                <TableHead>Feedback</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {completedTasks.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    No completed tasks yet.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                completedTasks.map((fault) => {
+                  const line = getLineDetails(fault.lineId);
+                  return (
+                    <TableRow key={fault.id}>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {fault.resolvedAt ? format(new Date(fault.resolvedAt), "PP p") : '-'}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {line?.number}
+                      </TableCell>
+                      <TableCell className="max-w-[250px] truncate">
+                        {fault.feedback}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="outline" size="sm" onClick={() => startEditFeedback(fault)}>
+                          Edit Feedback
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
 
       <Dialog open={!!completingFaultId} onOpenChange={(open) => !open && setCompletingFaultId(null)}>
         <DialogContent>
@@ -205,8 +276,8 @@ export default function MaintenanceDashboard() {
             <DialogDescription>Veuillez fournir un retour d'information sur la réparation pour clore ce ticket.</DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Textarea 
-              placeholder="Describe the repair actions taken..." 
+            <Textarea
+              placeholder="Describe the repair actions taken..."
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={4}
@@ -214,6 +285,26 @@ export default function MaintenanceDashboard() {
           </div>
           <DialogFooter>
             <Button onClick={handleComplete}>Submit Feedback</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingFeedbackId} onOpenChange={(open) => !open && setEditingFeedbackId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Feedback</DialogTitle>
+            <DialogDescription>Update your repair notes.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="Describe the repair actions taken..."
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button onClick={handleUpdateFeedback}>Update</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

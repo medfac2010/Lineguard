@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { User, Line, Fault, Subsidiary, UserRole, LineTypeDefinition, Message } from './types';
+import { User, Line, Fault, Subsidiary, UserRole, LineTypeDefinition, Message, LineRequest } from './types';
 import { format } from 'date-fns';
 
 interface AppState {
@@ -11,6 +11,7 @@ interface AppState {
   lineTypes: LineTypeDefinition[];
   messages: Message[];
   conversations: { userId: string, unread: number, lastMessage: Message }[];
+  lineRequests: LineRequest[];
   loading: boolean;
 }
 
@@ -37,6 +38,14 @@ interface AppContextType extends AppState {
   sendMessage: (receiverId: string, content: string) => Promise<boolean>;
   markAsRead: (senderId: string) => Promise<void>;
   setSelectedConversation: (userId: string | null) => void;
+  // Line Requests
+  createLineRequest: (requestedNumber: string, subsidiaryId: string) => Promise<boolean>;
+  approveLineRequest: (id: string) => Promise<boolean>;
+  rejectLineRequest: (id: string, reason: string) => Promise<boolean>;
+  deleteLineRequest: (id: string) => Promise<boolean>;
+  // Maintenance actions
+  setLineStatus: (id: string, status: string) => Promise<boolean>;
+  updateFaultFeedback: (id: string, feedback: string) => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -97,6 +106,17 @@ const convertMessage = (apiMsg: any): Message => ({
   timestamp: apiMsg.timestamp,
 });
 
+const convertLineRequest = (apiReq: any): LineRequest => ({
+  id: String(apiReq.id),
+  subsidiaryId: String(apiReq.subsidiaryId),
+  requestedNumber: apiReq.requestedNumber,
+  adminId: String(apiReq.adminId),
+  status: apiReq.status,
+  rejectionReason: apiReq.rejectionReason,
+  createdAt: apiReq.createdAt,
+  respondedAt: apiReq.respondedAt,
+});
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
@@ -106,6 +126,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [lineTypes, setLineTypes] = useState<LineTypeDefinition[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<{ userId: string, unread: number, lastMessage: Message }[]>([]);
+  const [lineRequests, setLineRequests] = useState<LineRequest[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -161,12 +182,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    // Poll Line requests
+    const loadLineRequests = async () => {
+      try {
+        const res = await fetch('/api/line-requests');
+        if (res.ok) {
+          const data = await res.json();
+          setLineRequests((Array.isArray(data) ? data : []).map(convertLineRequest));
+        }
+      } catch (error) {
+        console.error('Failed to load line requests', error);
+      }
+    }
+
     // Initial load
     loadStaticData();
     loadDynamicData();
+    loadLineRequests();
 
     // Polling for dynamic data every 5 seconds
-    const intervalId = setInterval(loadDynamicData, 5000);
+    const intervalId = setInterval(() => {
+      loadDynamicData();
+      loadLineRequests();
+    }, 5000);
 
     return () => clearInterval(intervalId);
   }, []);
@@ -707,12 +745,119 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+
+
+  const createLineRequest = async (requestedNumber: string, subsidiaryId: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/line-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestedNumber, subsidiaryId: parseInt(subsidiaryId) }),
+      });
+      if (res.ok) {
+        const newReq = convertLineRequest(await res.json());
+        setLineRequests(prev => [newReq, ...prev]);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  const approveLineRequest = async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/line-requests/${id}/approve`, { method: 'POST' });
+      if (res.ok) {
+        const { request, line } = await res.json();
+        setLineRequests(prev => prev.map(r => r.id === id ? convertLineRequest(request) : r));
+        setLines(prev => [...prev, convertLine(line)]);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  const rejectLineRequest = async (id: string, reason: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/line-requests/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      });
+      if (res.ok) {
+        const updated = convertLineRequest(await res.json());
+        setLineRequests(prev => prev.map(r => r.id === id ? updated : r));
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  const deleteLineRequest = async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/line-requests/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setLineRequests(prev => prev.filter(r => r.id !== id));
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  const setLineStatus = async (id: string, status: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/lines/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        setLines(prev => prev.map(l => l.id === id ? { ...l, status: status as any } : l));
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  const updateFaultFeedback = async (id: string, feedback: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/faults/${id}/feedback`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback }),
+      });
+      if (res.ok) {
+        setFaults(prev => prev.map(f => f.id === id ? { ...f, feedback } : f));
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  };
+
   return (
     <AppContext.Provider value={{
-      user, lines, faults, subsidiaries, users, lineTypes, loading, messages, conversations,
+      user, lines, faults, subsidiaries, users, lineTypes, loading, messages, conversations, lineRequests,
       login, logout, declareFault, confirmWorking, assignFault, resolveFault,
       addSubsidiary, updateSubsidiary, deleteSubsidiary, addUser, updateUser, deleteUser, changePassword, addLine, deleteLine, toggleLineInFaultFlow,
-      addLineType, updateLineType, deleteLineType, sendMessage, markAsRead, setSelectedConversation
+      addLineType, updateLineType, deleteLineType, sendMessage, markAsRead, setSelectedConversation,
+      createLineRequest, approveLineRequest, rejectLineRequest, deleteLineRequest, setLineStatus, updateFaultFeedback
     }}>
       {children}
     </AppContext.Provider>

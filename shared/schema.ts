@@ -45,7 +45,7 @@ export const lines = mysqlTable("lines", {
   subsidiaryId: int("subsidiary_id").notNull().references(() => subsidiaries.id),
   location: text("location").notNull(),
   establishmentDate: timestamp("establishment_date").notNull().defaultNow(),
-  status: varchar("status", { length: 20 }).notNull().default("working"), // 'working' | 'faulty' | 'maintenance' | 'archived'
+  status: varchar("status", { length: 20 }).notNull().default("working"), // 'working' | 'faulty' | 'maintenance' | 'archived' | 'out_of_service'
   lastChecked: timestamp("last_checked").notNull().defaultNow(),
   inFaultFlow: boolean("in_fault_flow").default(true),
 });
@@ -53,6 +53,23 @@ export const lines = mysqlTable("lines", {
 export const insertLineSchema = createInsertSchema(lines).omit({ id: true });
 export type InsertLine = z.infer<typeof insertLineSchema>;
 export type Line = typeof lines.$inferSelect;
+
+// LINE REQUESTS
+export const lineRequests = mysqlTable("line_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  subsidiaryId: int("subsidiary_id").notNull().references(() => subsidiaries.id),
+  requestedType: varchar("requested_type", { length: 50 }).notNull(), // Stores line type code e.g. 'LS', 'IP_STD'
+  assignedNumber: varchar("assigned_number", { length: 100 }), // Filled by maintenance on approval
+  adminId: int("admin_id").notNull().references(() => users.id),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // 'pending' | 'approved' | 'rejected'
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  respondedAt: timestamp("responded_at"),
+});
+
+export const insertLineRequestSchema = createInsertSchema(lineRequests).omit({ id: true, createdAt: true, respondedAt: true });
+export type InsertLineRequest = z.infer<typeof insertLineRequestSchema>;
+export type LineRequest = typeof lineRequests.$inferSelect;
 
 // FAULTS
 export const faults = mysqlTable("faults", {
