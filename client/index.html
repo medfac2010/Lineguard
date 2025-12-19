@@ -20,6 +20,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
+    <script>/* Theme init to avoid flash */(function(){try{const k='theme';const s=localStorage.getItem(k);const prefers=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;const t=s? s : (prefers? 'dark' : 'light');if(t==='dark')document.documentElement.classList.add('dark');}catch(e){} })();</script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

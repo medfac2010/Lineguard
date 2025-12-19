@@ -21,8 +21,12 @@ import {
   Building2,
   History,
   Activity,
-  UserCog
+  UserCog,
+  Sun,
+  Moon
 } from "lucide-react";
+import useTheme from "@/hooks/use-theme";
+import { Toggle } from "./ui/toggle";
 import {
   Collapsible,
   CollapsibleContent,
@@ -38,6 +42,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout, conversations, messages } = useApp();
   const [location, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Theme
+  const { theme, setTheme, toggleTheme } = useTheme();
 
   useEffect(() => {
     if (!user && location !== '/login') {
@@ -203,6 +209,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <p className="text-xs text-muted-foreground truncate capitalize">{user.role}</p>
           </div>
         </div>
+
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs text-muted-foreground">Mode</div>
+          <Toggle
+            pressed={theme === 'dark'}
+            size="sm"
+            variant="outline"
+            onPressedChange={(v: boolean) => setTheme(v ? 'dark' : 'light')}
+            aria-label="Toggle theme"
+            title="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Toggle>
+        </div>
+
         <Button variant="outline" className="w-full justify-start text-muted-foreground" onClick={() => { logout(); setLocation('/login'); }}>
           <LogOut className="mr-2 h-4 w-4" />
           Déconnexion
@@ -231,6 +252,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </SheetContent>
         </Sheet>
         <span className="ml-4 font-bold text-lg">LineGuard</span>
+        <div className="ml-auto flex items-center gap-2">
+          {/* Mobile theme toggle */}
+          <Toggle
+            pressed={theme === 'dark'}
+            size="sm"
+            variant="outline"
+            onPressedChange={(v: boolean) => setTheme(v ? 'dark' : 'light')}
+            aria-label="Toggle theme"
+            title="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Toggle>
+        </div>
       </div>
 
       {/* Main Content */}
