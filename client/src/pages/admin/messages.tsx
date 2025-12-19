@@ -216,7 +216,7 @@ export default function AdminMessages() {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-8 w-8 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                                                    className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors"
                                                     onClick={(e) => handleDeleteClick(e, conv.userId)}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
