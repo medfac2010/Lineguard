@@ -40,7 +40,7 @@ export interface IStorage {
 
   createLineRequest(request: InsertLineRequest): Promise<LineRequest>;
   listLineRequests(): Promise<LineRequest[]>;
-  updateLineRequestStatus(id: number, status: string, rejectionReason?: string): Promise<LineRequest>;
+  updateLineRequestStatus(id: number, status: string, rejectionReason?: string, assignedNumber?: string): Promise<LineRequest>;
   deleteLineRequest(id: number): Promise<void>;
 
   createMessage(message: InsertMessage): Promise<Message>;

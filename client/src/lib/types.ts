@@ -61,7 +61,8 @@ export interface Message {
 export interface LineRequest {
   id: string;
   subsidiaryId: string;
-  requestedNumber: string;
+  requestedType: string;
+  assignedNumber?: string;
   adminId: string;
   status: 'pending' | 'approved' | 'rejected';
   rejectionReason?: string;

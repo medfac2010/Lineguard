@@ -6,16 +6,41 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function AdminMessages() {
     const { conversations, users, user, setSelectedConversation } = useApp();
     const [activeUserId, setActiveUserId] = useState<string | null>(null);
+    const [showCreateConversation, setShowCreateConversation] = useState(false);
+    const [newConversationUserId, setNewConversationUserId] = useState<string | null>(null);
+    const [newConversationUser, setNewConversationUser] = useState<string | null>(null);
 
     const handleSelectUser = (id: string) => {
         setActiveUserId(id);
         setSelectedConversation(id);
+        setShowCreateConversation(false);
+        setNewConversationUserId(null);
+        setNewConversationUser(null);
     };
-
+    const handleCreateConversation = () => {
+        setShowCreateConversation(!showCreateConversation);
+        setNewConversationUserId(null);
+        setNewConversationUser(null);
+        setActiveUserId(null);
+    };
+    const handleCreateConversationSubmit = () => {
+        if (newConversationUserId && newConversationUser) {
+            const newConversation = {
+                id: uuidv4(),
+                userId: newConversationUserId,
+                name: newConversationUser,
+                lastMessage: null,
+                unread: 0,
+            };
+            setSelectedConversation(newConversation.id);
+            setShowCreateConversation(false);
+        }
+    };
     const getPartnerName = (partnerId: string) => {
         return users.find(u => u.id === partnerId)?.name || 'Unknown User';
     };
@@ -33,7 +58,10 @@ export default function AdminMessages() {
                     <CardContent className="flex-1 p-0 overflow-hidden">
                         <ScrollArea className="h-full">
                             {conversations.length === 0 ? (
-                                <p className="p-4 text-center text-muted-foreground text-sm">No conversations yet</p>
+                                <button type="button" onClick={handleCreateConversation} className="p-4 text-center text-muted-foreground text-sm">
+                                    No conversations yet
+                                </button>
+
                             ) : (
                                 <div className="flex flex-col">
                                     {conversations.map(conv => (
@@ -67,9 +95,13 @@ export default function AdminMessages() {
                                         </button>
                                     ))}
                                 </div>
+
                             )}
                         </ScrollArea>
                     </CardContent>
+                    {/* <button type="button" onClick={handleDeleteConversation} className="p-4 text-center text-muted-foreground text-sm">
+                            Delete conversation
+                        </button> */}
                 </Card>
 
                 {/* Chat Area */}

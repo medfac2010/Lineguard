@@ -16,12 +16,13 @@ export class LineRequestStorage {
     return await db.select().from(lineRequests).orderBy(desc(lineRequests.createdAt));
   }
 
-  async updateLineRequestStatus(id: number, status: string, rejectionReason?: string): Promise<LineRequest> {
+  async updateLineRequestStatus(id: number, status: string, rejectionReason?: string, assignedNumber?: string): Promise<LineRequest> {
     const db = await getDb();
     await db.update(lineRequests)
       .set({ 
         status, 
-        rejectionReason, 
+        rejectionReason,
+        assignedNumber,
         respondedAt: new Date() 
       })
       .where(eq(lineRequests.id, id));

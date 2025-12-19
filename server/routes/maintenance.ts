@@ -2,14 +2,8 @@ import type { Express } from "express";
 import { storage } from "../storage";
 
 export function registerMaintenanceRoutes(app: Express) {
-  // Middleware to ensure user is Maintenance
-  const isMaintenance = (req: any, res: any, next: any) => {
-    if (req.isAuthenticated() && req.user?.role === "maintenance") return next();
-    res.status(403).json({ error: "Forbidden: Maintenance access required" });
-  };
-
   // Get Fault Statistics
-  app.get("/api/maintenance/stats", isMaintenance, async (req, res) => {
+  app.get("/api/maintenance/stats", async (req, res) => {
     try {
       const faults = await storage.listFaults();
       const total = faults.length;
@@ -27,7 +21,6 @@ export function registerMaintenanceRoutes(app: Express) {
         }
       });
       const avgResolutionTimeMs = resolvedCount > 0 ? totalResolutionTime / resolvedCount : 0;
-      // Convert to hours or readable string format in frontend, sending raw ms here
       
       res.json({
         total,
@@ -42,7 +35,7 @@ export function registerMaintenanceRoutes(app: Express) {
   });
 
   // Declare Line Out of Service
-  app.patch("/api/lines/:id/status", isMaintenance, async (req, res) => {
+  app.patch("/api/lines/:id/status", async (req, res) => {
     try {
       const { status } = req.body;
       if (!status) return res.status(400).json({ error: "Status required" });
@@ -55,7 +48,7 @@ export function registerMaintenanceRoutes(app: Express) {
   });
 
   // Update Fault Feedback
-  app.patch("/api/faults/:id/feedback", isMaintenance, async (req, res) => {
+  app.patch("/api/faults/:id/feedback", async (req, res) => {
     try {
       const { feedback } = req.body;
       if (typeof feedback !== "string") return res.status(400).json({ error: "Feedback required" });

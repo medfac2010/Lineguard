@@ -9,6 +9,8 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, XCircle, Clock } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 export default function MaintenanceRequests() {
     const { lineRequests, subsidiaries, users, approveLineRequest, rejectLineRequest } = useApp();
@@ -17,13 +19,20 @@ export default function MaintenanceRequests() {
     const [rejectingId, setRejectingId] = useState<string | null>(null);
     const [rejectionReason, setRejectionReason] = useState("");
 
+    const [approvingId, setApprovingId] = useState<string | null>(null);
+    const [assignedNumber, setAssignedNumber] = useState("");
+
     const pendingRequests = lineRequests.filter(r => r.status === 'pending');
     const pastRequests = lineRequests.filter(r => r.status !== 'pending');
 
-    const handleApprove = async (id: string) => {
-        const success = await approveLineRequest(id);
+    const handleApprove = async () => {
+        if (!approvingId || !assignedNumber) return;
+
+        const success = await approveLineRequest(approvingId, assignedNumber);
         if (success) {
-            toast({ title: "Approved", description: "Request approved and line created.", className: "bg-green-600 text-white border-none" });
+            toast({ title: "Approved", description: `Request approved and line ${assignedNumber} created.`, className: "bg-green-600 text-white border-none" });
+            setApprovingId(null);
+            setAssignedNumber("");
         } else {
             toast({ title: "Error", description: "Failed to approve request", variant: "destructive" });
         }
@@ -66,7 +75,7 @@ export default function MaintenanceRequests() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Date</TableHead>
-                                <TableHead>Requested Number</TableHead>
+                                <TableHead>Requested Type</TableHead>
                                 <TableHead>Subsidiary</TableHead>
                                 <TableHead>Requested By</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -83,11 +92,11 @@ export default function MaintenanceRequests() {
                                 pendingRequests.map((req) => (
                                     <TableRow key={req.id}>
                                         <TableCell>{format(new Date(req.createdAt), 'MMM d, yyyy')}</TableCell>
-                                        <TableCell className="font-mono font-bold">{req.requestedNumber}</TableCell>
+                                        <TableCell><Badge variant="outline">{req.requestedType}</Badge></TableCell>
                                         <TableCell>{getSubName(req.subsidiaryId)}</TableCell>
                                         <TableCell>{getAdminName(req.adminId)}</TableCell>
                                         <TableCell className="text-right space-x-2">
-                                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleApprove(req.id)}>
+                                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => setApprovingId(req.id)}>
                                                 Approve
                                             </Button>
                                             <Button size="sm" variant="destructive" onClick={() => setRejectingId(req.id)}>
@@ -130,7 +139,12 @@ export default function MaintenanceRequests() {
                                 pastRequests.map((req) => (
                                     <TableRow key={req.id}>
                                         <TableCell>{req.respondedAt ? format(new Date(req.respondedAt), 'MMM d, yyyy') : '-'}</TableCell>
-                                        <TableCell className="font-mono">{req.requestedNumber}</TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col">
+                                                <Badge variant="outline" className="w-fit">{req.requestedType}</Badge>
+                                                {req.assignedNumber && <span className="font-mono text-xs mt-1">Num: {req.assignedNumber}</span>}
+                                            </div>
+                                        </TableCell>
                                         <TableCell>{getSubName(req.subsidiaryId)}</TableCell>
                                         <TableCell>
                                             {req.status === 'approved'
@@ -148,6 +162,31 @@ export default function MaintenanceRequests() {
                     </Table>
                 </CardContent>
             </Card>
+
+            {/* Approval Dialog */}
+            <Dialog open={!!approvingId} onOpenChange={(open) => !open && setApprovingId(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Approve Line Request</DialogTitle>
+                        <DialogDescription>Assign a phone number to complete the request.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="number">Phone Number / IP</Label>
+                            <Input
+                                id="number"
+                                placeholder="e.g. 052445..."
+                                value={assignedNumber}
+                                onChange={(e) => setAssignedNumber(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setApprovingId(null)}>Cancel</Button>
+                        <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={handleApprove}>Confirm Approval</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Rejection Dialog */}
             <Dialog open={!!rejectingId} onOpenChange={(open) => !open && setRejectingId(null)}>

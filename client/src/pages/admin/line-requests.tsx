@@ -13,24 +13,24 @@ import { PlusCircle, Trash2, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 export default function AdminLineRequests() {
-    const { lineRequests, subsidiaries, createLineRequest, deleteLineRequest, users } = useApp();
+    const { lineRequests, subsidiaries, lineTypes, createLineRequest, deleteLineRequest, users, user } = useApp();
     const { toast } = useToast();
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [newRequestNumber, setNewRequestNumber] = useState("");
+    const [selectedType, setSelectedType] = useState("");
     const [selectedSubsidiary, setSelectedSubsidiary] = useState("");
 
     const handleCreate = async () => {
-        if (!newRequestNumber || !selectedSubsidiary) {
+        if (!selectedType || !selectedSubsidiary || !user) {
             toast({ title: "Error", description: "Please fill all fields", variant: "destructive" });
             return;
         }
 
-        const success = await createLineRequest(newRequestNumber, selectedSubsidiary);
+        const success = await createLineRequest(selectedType, selectedSubsidiary, user.id);
         if (success) {
             toast({ title: "Success", description: "Line request created" });
             setIsDialogOpen(false);
-            setNewRequestNumber("");
+            setSelectedType("");
             setSelectedSubsidiary("");
         } else {
             toast({ title: "Error", description: "Failed to create request", variant: "destructive" });
@@ -82,8 +82,17 @@ export default function AdminLineRequests() {
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
-                                <Label>Requested Number</Label>
-                                <Input value={newRequestNumber} onChange={(e) => setNewRequestNumber(e.target.value)} placeholder="e.g. 0123456789" />
+                                <Label>Requested Line Type</Label>
+                                <Select value={selectedType} onValueChange={setSelectedType}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {lineTypes.map(type => (
+                                            <SelectItem key={type.code} value={type.code}>{type.title} ({type.code})</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="grid gap-2">
                                 <Label>Subsidiary</Label>
@@ -116,7 +125,8 @@ export default function AdminLineRequests() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Date</TableHead>
-                                <TableHead>Number</TableHead>
+                                <TableHead>Requested Type</TableHead>
+                                <TableHead>Assigned Number</TableHead>
                                 <TableHead>Subsidiary</TableHead>
                                 <TableHead>Requested By</TableHead>
                                 <TableHead>Status</TableHead>
@@ -135,7 +145,8 @@ export default function AdminLineRequests() {
                                 lineRequests.map((req) => (
                                     <TableRow key={req.id}>
                                         <TableCell>{format(new Date(req.createdAt), 'MMM d, yyyy')}</TableCell>
-                                        <TableCell className="font-mono">{req.requestedNumber}</TableCell>
+                                        <TableCell><Badge variant="outline">{req.requestedType}</Badge></TableCell>
+                                        <TableCell className="font-mono font-bold">{req.assignedNumber || '-'}</TableCell>
                                         <TableCell>{getSubName(req.subsidiaryId)}</TableCell>
                                         <TableCell>{getAdminName(req.adminId)}</TableCell>
                                         <TableCell>{getStatusBadge(req.status)}</TableCell>
