@@ -14,13 +14,13 @@ export default function LoginPage() {
   const { users, login } = useApp();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   const [selectedUserId, setSelectedUserId] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedUserId) {
       toast({
         title: "Erreur",
@@ -31,7 +31,7 @@ export default function LoginPage() {
     }
 
     const success = await login(selectedUserId, password);
-    
+
     if (success) {
       const user = users.find(u => u.id === selectedUserId);
       if (user) {
@@ -55,7 +55,7 @@ export default function LoginPage() {
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-primary text-primary-foreground mb-4 shadow-lg shadow-primary/20">
             <Shield className="h-6 w-6" />
-          </div>          
+          </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">LineGuard</h1>
           <p className="text-muted-foreground">Système de Maintenance Télécom Entreprise</p>
         </div>
@@ -89,7 +89,7 @@ export default function LoginPage() {
                   <Lock className="h-4 w-4" />
                   Mot de passe
                 </Label>
-                <Input 
+                <Input
                   id="password"
                   type="password"
                   placeholder="Entrez votre mot de passe"
@@ -105,10 +105,10 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
-        
+
         <div className="space-y-2 text-center text-xs text-muted-foreground">
-          <p>Identifiants de démo</p>
-          <p className="font-mono">Admin: admin | Filiale: user1/user2 | Maintenance: maint</p>
+          <p>Transmissions Nationales Wilaya de Sétif</p>
+          <p className="font-mono">Développé par : Belahreche Mohamed Chef de Service Exploitation <br />Tel Fixe: 036617125 (04)Chiffres: 5060/5260 <br />Email: webmaster@wilayasetif.dz</p>
         </div>
       </div>
     </div>

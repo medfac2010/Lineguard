@@ -31,6 +31,7 @@ export const users = mysqlTable("users", {
   role: varchar("role", { length: 20 }).notNull(), // 'admin' | 'subsidiary' | 'maintenance'
   password: text("password").notNull(),
   subsidiaryId: int("subsidiary_id").references(() => subsidiaries.id),
+  avatar: text("avatar"), // Base64 or URL for the predefined avatar
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });

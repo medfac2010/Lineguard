@@ -48,6 +48,7 @@ export function useUsers() {
           role: updates.role,
           password: updates.password,
           subsidiaryId: updates.subsidiaryId ? parseInt(updates.subsidiaryId) : null,
+          avatar: updates.avatar,
         }),
       });
       if (res.ok) {

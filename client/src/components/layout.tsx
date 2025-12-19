@@ -1,5 +1,6 @@
 import { useApp } from "@/lib/store";
 import { Link, useLocation } from "wouter";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
   LayoutDashboard,
   Phone,
@@ -188,9 +189,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <div className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 mb-4 px-2">
-          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
-            {user.name.charAt(0)}
-          </div>
+          <Avatar className="h-8 w-8">
+            {user.avatar ? (
+              <AvatarImage src={user.avatar} alt={user.name} />
+            ) : (
+              <AvatarFallback className="text-xs font-bold">
+                {user.name.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            )}
+          </Avatar>
           <div className="overflow-hidden">
             <p className="text-sm font-medium truncate">{user.name}</p>
             <p className="text-xs text-muted-foreground truncate capitalize">{user.role}</p>

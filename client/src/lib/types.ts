@@ -6,6 +6,7 @@ export interface User {
   role: UserRole;
   password?: string; // Mock password
   subsidiaryId?: string; // For subsidiary users
+  avatar?: string;
 }
 
 export interface LineTypeDefinition {

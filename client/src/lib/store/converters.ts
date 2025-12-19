@@ -7,6 +7,7 @@ export const convertUser = (apiUser: any): User => ({
   role: apiUser.role,
   password: apiUser.password || undefined, // Password may not be included in API response
   subsidiaryId: apiUser.subsidiaryId ? String(apiUser.subsidiaryId) : undefined,
+  avatar: apiUser.avatar || undefined,
 });
 
 export const convertLine = (apiLine: any): Line => ({
