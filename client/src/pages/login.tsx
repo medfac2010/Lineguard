@@ -57,7 +57,7 @@ export default function LoginPage() {
             <Shield className="h-6 w-6" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">LineGuard</h1>
-          <p className="text-muted-foreground">Système de Maintenance Télécom Entreprise</p>
+          <p className="text-muted-foreground">Système de Gestion de l'Entretien des Lignes Téléphoniques</p>
         </div>
 
         <Card className="border-muted-foreground/10 shadow-xl">

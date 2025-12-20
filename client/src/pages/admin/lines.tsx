@@ -4,10 +4,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Trash2 } from "lucide-react";
+import { Search, Trash2, FileText, DownloadCloud } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { exportLinesPdf, exportLinesXlsx } from "@/lib/export-lines";
 
 export default function AdminLines() {
   const { lines, subsidiaries, deleteLine } = useApp();
@@ -42,6 +43,36 @@ export default function AdminLines() {
     }
   };
 
+  const handleExportPdf = (exportLines: typeof filteredLines) => {
+    try {
+      if (exportLines.length === 0) {
+        toast({ title: "Aucune donnée", description: "Aucune ligne à exporter.", variant: "destructive" });
+        return;
+      }
+      exportLinesPdf(exportLines, subsidiaries);
+      toast({ title: "Export PDF", description: "Le PDF a été généré et téléchargé." });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Erreur", description: "Impossible de générer le PDF.", variant: "destructive" });
+    }
+  };
+
+  const handleExportXlsx = (exportLines: typeof filteredLines) => {
+    try {
+      if (exportLines.length === 0) {
+        toast({ title: "Aucune donnée", description: "Aucune ligne à exporter.", variant: "destructive" });
+        return;
+      }
+      exportLinesXlsx(exportLines, subsidiaries);
+      toast({ title: "Export Excel", description: "Le fichier Excel a été généré et téléchargé." });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Erreur", description: "Impossible de générer le fichier Excel.", variant: "destructive" });
+    }
+  };
+
+
+
   return (
     <div className="space-y-8">
       <div>
@@ -53,14 +84,27 @@ export default function AdminLines() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Lignes ({filteredLines.length})</CardTitle>
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Rechercher un numéro de ligne ou une localisation..." 
-                className="pl-8"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative w-64">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Rechercher un numéro de ligne ou une localisation..." 
+                  className="pl-8"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+
+              <Button size="sm" variant="default" className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-100" onClick={() => handleExportPdf(filteredLines)}>
+                <FileText className="h-4 w-4 mr-2" />
+                Exporter PDF
+              </Button>
+
+              <Button size="sm" variant="default" className="bg-green-50 text-green-700 border border-green-200 hover:bg-green-100" onClick={() => handleExportXlsx(filteredLines)}>
+                <DownloadCloud className="h-4 w-4 mr-2" />
+                Exporter Excel
+              </Button>
+
             </div>
           </div>
         </CardHeader>

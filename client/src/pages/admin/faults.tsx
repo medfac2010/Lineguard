@@ -1,10 +1,14 @@
 import { useApp } from "@/lib/store";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +16,11 @@ import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { exportFaultsPdf, exportFaultsXlsx } from '@/lib/export-faults';
+import { CartesianGrid } from 'recharts';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
+import { Fault } from "@/lib/types";
+import  { DocumentIcon, TableCellsIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 
 export default function AdminFaults() {
   const { faults, lines, users, assignFault, subsidiaries } = useApp();
@@ -19,6 +28,15 @@ export default function AdminFaults() {
   
   const [selectedFaultId, setSelectedFaultId] = useState<string | null>(null);
   const [selectedMaintUser, setSelectedMaintUser] = useState<string>("");
+
+  // Filters: multi-subsidiary and date range
+  const [selectedSubsidiaryIds, setSelectedSubsidiaryIds] = useState<string[]>(subsidiaries.map(s => s.id));
+  // default to last 30 days
+  const defaultEnd = new Date();
+  const defaultStart = new Date();
+  defaultStart.setDate(defaultEnd.getDate() - 30);
+  const [startDate, setStartDate] = useState<string>(defaultStart.toISOString().slice(0,10));
+  const [endDate, setEndDate] = useState<string>(defaultEnd.toISOString().slice(0,10));
 
   const activeFaults = faults.filter(f => f.status !== 'resolved');
   const maintenanceUsers = users.filter(u => u.role === 'maintenance');
@@ -38,6 +56,26 @@ export default function AdminFaults() {
     }
   };
 
+  // compute filtered faults using selected subsidiaries and date range
+  const filteredFaults = activeFaults.filter(f => {
+    if (!selectedSubsidiaryIds.includes(f.subsidiaryId)) return false;
+    if (startDate) {
+      const start = new Date(startDate);
+      if (new Date(f.declaredAt) < start) return false;
+    }
+    if (endDate) {
+      // include entire end day
+      const end = new Date(endDate);
+      end.setHours(23,59,59,999);
+      if (new Date(f.declaredAt) > end) return false;
+    }
+    return true;
+  });
+ const exporttoPDFbySubsidiary = () => {
+                if (filteredFaults.length === 0) { toast({ title: "Aucune donnée", description: "Aucune panne active à exporter.", variant: "destructive" }); return; }
+                exportFaultsPdf(filteredFaults, lines, subsidiaries, users, 'pannes_par_filiale.pdf');
+                toast({ title: "PDF exporté", description: "PDF groupé par filiale téléchargé." });
+              }
   const exportToPDF = () => {
     const doc = new jsPDF();
     
@@ -46,7 +84,7 @@ export default function AdminFaults() {
     doc.setFontSize(11);
     doc.text(`Généré le ${format(new Date(), "PPpp")}`, 14, 30);
 
-    const tableData = activeFaults.map(fault => {
+    const tableData = filteredFaults.map(fault => {
       const line = getLineDetails(fault.lineId);
       return [
         format(new Date(fault.declaredAt), "yyyy-MM-dd HH:mm"),
@@ -69,9 +107,13 @@ export default function AdminFaults() {
     doc.save('active_faults_report.pdf');
     toast({ title: "PDF exporté", description: "Le fichier a été téléchargé." });
   };
-
+  const exportToExcelBySubsidiary = () => {
+                if (filteredFaults.length === 0) { toast({ title: "Aucune donnée", description: "Aucune panne active à exporter.", variant: "destructive" }); return; }
+                exportFaultsXlsx(filteredFaults, lines, subsidiaries, users, 'pannes_par_filiale.xlsx');
+                toast({ title: "Excel exporté", description: "Excel groupé par filiale téléchargé." });
+              }
   const exportToExcel = () => {
-    const data = activeFaults.map(fault => {
+    const data = filteredFaults.map(fault => {
       const line = getLineDetails(fault.lineId);
       return {
         "Date Reported": format(new Date(fault.declaredAt), "yyyy-MM-dd HH:mm:ss"),
@@ -99,84 +141,162 @@ export default function AdminFaults() {
           <h1 className="text-3xl font-bold tracking-tight">Gestion des pannes</h1>
           <p className="text-muted-foreground">Vérifier les problèmes et assigner les bons de travail</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={exportToPDF}>
-            <FileText className="mr-2 h-4 w-4" />
-            Exporter en PDF
-          </Button>
-          <Button variant="outline" onClick={exportToExcel}>
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Exporter en Excel
-          </Button>
-        </div>
       </div>
-
+      <div className="rounded-xl border bg-card text-card-foreground shadow">            
+          <Card>
+            <CardHeader>
+              <CardTitle>Filtres</CardTitle>
+              <CardDescription>Sélectionnez la plage de dates pour filtrer les pannes</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline">
+                        Filiales ({selectedSubsidiaryIds.length})
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2" onPointerDown={(e) => e.stopPropagation()}>
+                          <Button size="sm" onClick={() => setSelectedSubsidiaryIds(subsidiaries.map(s => s.id))}>Tout sélectionner</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setSelectedSubsidiaryIds([])}>Effacer</Button>
+                        </div>
+                        <div className="grid max-h-48 overflow-auto">
+                          {subsidiaries.map(sub => (
+                            <div key={sub.id} className="flex items-center gap-2 py-1" onPointerDown={(e) => e.stopPropagation()}>
+                              <Checkbox checked={selectedSubsidiaryIds.includes(sub.id)} onCheckedChange={(val) => {
+                                if (val) setSelectedSubsidiaryIds(prev => Array.from(new Set([...prev, sub.id])));
+                                else setSelectedSubsidiaryIds(prev => prev.filter(id => id !== sub.id));
+                              }} />
+                              <div className="text-sm">{sub.name}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <div className="flex items-center gap-2">
+                        <div className="flex flex-col">
+                          <Label htmlFor="startDate">Date début</Label>
+                          <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                        </div>
+                        <div className="flex flex-col">
+                          <Label htmlFor="endDate">Date fin</Label>
+                          <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                        </div>
+                  </div>
+                  <Menu as="div" className="relative inline-block">
+                      <MenuButton className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs inset-ring-1 inset-ring-gray-300 hover:bg-gray-50">
+                        Exporter
+                        <ChevronDownIcon aria-hidden="true" className="-mr-1 size-5 text-gray-400" />
+                      </MenuButton>
+                      <MenuItems    transition className="absolute right-0 z-10 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg outline-1 outline-black/5 transition data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in">
+                        <MenuItem>
+                          <a
+                            href="#"
+                            onClick={exportToPDF}
+                            className="inline-block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
+                          >
+                            Exporter par Filter (PDF)
+                          </a>
+                        </MenuItem>
+                        <MenuItem>
+                          <a
+                            href="#"
+                            onClick={exportToExcel}
+                            className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
+                          >
+                            Exporter par filter (Excel)
+                          </a>
+                        </MenuItem>
+                        <MenuItem>
+                            <a href="#" onClick={exporttoPDFbySubsidiary} 
+                            className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
+                            >
+                              Exporter par filiale (PDF)
+                            </a>
+                        </MenuItem>
+                        <MenuItem>
+                                    <a
+                                      href="#"
+                                      onClick={exportToExcelBySubsidiary}
+                                      className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
+                                    >
+                                      Exporter par filiale (Excel)
+                                    </a>
+                        </MenuItem>
+                    </MenuItems>
+                  </Menu>
+                </div>
+          </CardContent>      
+          </Card>
+      </div>
       <Card>
-        <CardHeader>
-          <CardTitle>Rapports de pannes actives</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Filiale</TableHead>
-                <TableHead>Ligne</TableHead>
-                <TableHead>Problème</TableHead>
-                <TableHead>Cause Probable</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {activeFaults.length === 0 ? (
+          <CardHeader>
+            <CardTitle>Rapports de pannes actives</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    Aucune panne active signalée.
-                  </TableCell>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Filiale</TableHead>
+                  <TableHead>Ligne</TableHead>
+                  <TableHead>Problème</TableHead>
+                  <TableHead>Cause Probable</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
-              ) : (
-                activeFaults.map((fault) => {
-                  const line = getLineDetails(fault.lineId);
-                  return (
-                    <TableRow key={fault.id}>
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                        {format(new Date(fault.declaredAt), "dd/MM/yyyy HH:mm")}
-                      </TableCell>
-                      <TableCell>{getSubName(fault.subsidiaryId)}</TableCell>
-                      <TableCell className="font-mono text-xs">
-                        <div>{line?.number}</div>
-                        <div className="text-muted-foreground">{line?.type}</div>
-                      </TableCell>
-                      <TableCell className="max-w-[200px]">
-                        <div className="font-medium truncate" title={fault.symptoms}>{fault.symptoms}</div>
-                        <div className="text-xs text-muted-foreground truncate" title={fault.probableCause}>Cause probable: {fault.probableCause}</div>
-                      </TableCell>
-                      <TableCell>
-                        {fault.status === 'open' && <Badge variant="destructive">Ouvert</Badge>}
-                        {fault.status === 'assigned' && <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Assigné</Badge>}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {fault.status === 'open' && (
-                          <Button size="sm" onClick={() => setSelectedFaultId(fault.id)}>
-                            Assign Bon de travail
-                          </Button>
-                        )}
-                        {fault.status === 'assigned' && (
-                          <span className="text-xs text-muted-foreground italic">
-                            En attente de retour
-                          </span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
+              </TableHeader>
+              <TableBody>
+                {filteredFaults.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      Aucune panne active signalée.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredFaults.map((fault) => {
+                    const line = getLineDetails(fault.lineId);
+                    return (
+                      <TableRow key={fault.id}>
+                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                          {format(new Date(fault.declaredAt), "dd/MM/yyyy HH:mm")}
+                        </TableCell>
+                        <TableCell>{getSubName(fault.subsidiaryId)}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          <div>{line?.number}</div>
+                          <div className="text-muted-foreground">{line?.type}</div>
+                        </TableCell>
+                        <TableCell className="max-w-[200px]">
+                          <div className="font-medium truncate" title={fault.symptoms}>{fault.symptoms}</div>
+                          <div className="text-xs text-muted-foreground truncate" title={fault.probableCause}>Cause probable: {fault.probableCause}</div>
+                        </TableCell>
+                        <TableCell>
+                          {fault.status === 'open' && <Badge variant="destructive">Ouvert</Badge>}
+                          {fault.status === 'assigned' && <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Assigné</Badge>}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {fault.status === 'open' && (
+                            <Button size="sm" onClick={() => setSelectedFaultId(fault.id)}>
+                              Assign Bon de travail
+                            </Button>
+                          )}
+                          {fault.status === 'assigned' && (
+                            <span className="text-xs text-muted-foreground italic">
+                              En attente de retour
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
       </Card>
-
       <Dialog open={!!selectedFaultId} onOpenChange={(open) => !open && setSelectedFaultId(null)}>
         <DialogContent>
           <DialogHeader>

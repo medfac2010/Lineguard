@@ -35,7 +35,7 @@ import {
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -82,23 +82,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const NavGroup = ({ label, icon: Icon, children, active }: { label: string, icon: any, children: React.ReactNode, active?: boolean }) => {
     const [isOpen, setIsOpen] = useState(active);
+    const closeTimerRef = useRef<number | null>(null);
+
+    const clearCloseTimer = () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    };
+
+    const handleMouseEnter = () => {
+      clearCloseTimer();
+    };
+
+    const handleMouseLeave = () => {
+      // small delay so moving between trigger and content doesn't close immediately
+      closeTimerRef.current = window.setTimeout(() => setIsOpen(false), 300);
+    };
 
     return (
-      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
-        <CollapsibleTrigger asChild>
-          <div className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground",
-            isOpen && "text-foreground"
-          )}>
-            <Icon className="h-4 w-4 shrink-0" />
-            <span className="flex-1">{label}</span>
-            {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </div>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-1 mt-1">
-          {children}
-        </CollapsibleContent>
-      </Collapsible>
+      <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+        <Collapsible open={isOpen} onOpenChange={(v) => { clearCloseTimer(); setIsOpen(v); }} className="w-full">
+          <CollapsibleTrigger asChild>
+            <div className={cn(
+              "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground",
+              isOpen && "text-foreground"
+            )}>
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="flex-1">{label}</span>
+              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-1 mt-1">
+            {children}
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
     );
   };
 
