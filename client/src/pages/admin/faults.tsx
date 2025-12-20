@@ -18,7 +18,6 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { exportFaultsPdf, exportFaultsXlsx } from '@/lib/export-faults';
 import { CartesianGrid } from 'recharts';
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { Fault } from "@/lib/types";
 import  { DocumentIcon, TableCellsIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 
@@ -146,90 +145,69 @@ export default function AdminFaults() {
           <Card>
             <CardHeader>
               <CardTitle>Filtres</CardTitle>
-              <CardDescription>Sélectionnez la plage de dates pour filtrer les pannes</CardDescription>
+              <CardDescription>Sélectionnez le filtrer des pannes</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline">
-                        Filiales ({selectedSubsidiaryIds.length})
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                      <div className="flex flex-col gap-2">
-                        <div className="flex gap-2" onPointerDown={(e) => e.stopPropagation()}>
-                          <Button size="sm" onClick={() => setSelectedSubsidiaryIds(subsidiaries.map(s => s.id))}>Tout sélectionner</Button>
-                          <Button size="sm" variant="ghost" onClick={() => setSelectedSubsidiaryIds([])}>Effacer</Button>
-                        </div>
-                        <div className="grid max-h-48 overflow-auto">
-                          {subsidiaries.map(sub => (
-                            <div key={sub.id} className="flex items-center gap-2 py-1" onPointerDown={(e) => e.stopPropagation()}>
-                              <Checkbox checked={selectedSubsidiaryIds.includes(sub.id)} onCheckedChange={(val) => {
-                                if (val) setSelectedSubsidiaryIds(prev => Array.from(new Set([...prev, sub.id])));
-                                else setSelectedSubsidiaryIds(prev => prev.filter(id => id !== sub.id));
-                              }} />
-                              <div className="text-sm">{sub.name}</div>
-                            </div>
-                          ))}
-                        </div>
+            <CardContent className="flex flex-col md:flex-row md:items-end gap-4">
+              <div className="w-full md:w-56">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      <span>Filiales</span>
+                      <span className="text-sm text-muted-foreground">({selectedSubsidiaryIds.length})</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2" onPointerDown={(e) => e.stopPropagation()}>
+                        <Button size="sm" onClick={() => setSelectedSubsidiaryIds(subsidiaries.map(s => s.id))}>Tout sélectionner</Button>
+                        <Button size="sm" variant="ghost" onClick={() => setSelectedSubsidiaryIds([])}>Effacer</Button>
                       </div>
-                    </PopoverContent>
-                  </Popover>
-                  <div className="flex items-center gap-2">
-                        <div className="flex flex-col">
-                          <Label htmlFor="startDate">Date début</Label>
-                          <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                        </div>
-                        <div className="flex flex-col">
-                          <Label htmlFor="endDate">Date fin</Label>
-                          <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                        </div>
-                  </div>
-                  <Menu as="div" className="relative inline-block">
-                      <MenuButton className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs inset-ring-1 inset-ring-gray-300 hover:bg-gray-50">
-                        Exporter
-                        <ChevronDownIcon aria-hidden="true" className="-mr-1 size-5 text-gray-400" />
-                      </MenuButton>
-                      <MenuItems    transition className="absolute right-0 z-10 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg outline-1 outline-black/5 transition data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in">
-                        <MenuItem>
-                          <a
-                            href="#"
-                            onClick={exportToPDF}
-                            className="inline-block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
-                          >
-                            Exporter par Filter (PDF)
-                          </a>
-                        </MenuItem>
-                        <MenuItem>
-                          <a
-                            href="#"
-                            onClick={exportToExcel}
-                            className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
-                          >
-                            Exporter par filter (Excel)
-                          </a>
-                        </MenuItem>
-                        <MenuItem>
-                            <a href="#" onClick={exporttoPDFbySubsidiary} 
-                            className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
-                            >
-                              Exporter par filiale (PDF)
-                            </a>
-                        </MenuItem>
-                        <MenuItem>
-                                    <a
-                                      href="#"
-                                      onClick={exportToExcelBySubsidiary}
-                                      className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
-                                    >
-                                      Exporter par filiale (Excel)
-                                    </a>
-                        </MenuItem>
-                    </MenuItems>
-                  </Menu>
+                      <div className="grid max-h-48 overflow-auto">
+                        {subsidiaries.map(sub => (
+                          <div key={sub.id} className="flex items-center gap-2 py-1" onPointerDown={(e) => e.stopPropagation()}>
+                            <Checkbox checked={selectedSubsidiaryIds.includes(sub.id)} onCheckedChange={(val) => {
+                              if (val) setSelectedSubsidiaryIds(prev => Array.from(new Set([...prev, sub.id])));
+                              else setSelectedSubsidiaryIds(prev => prev.filter(id => id !== sub.id));
+                            }} />
+                            <div className="text-sm">{sub.name}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="flex w-full md:max-w-md gap-2">
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="startDate">Date début</Label>
+                  <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                 </div>
-          </CardContent>      
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="endDate">Date fin</Label>
+                  <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="w-full md:w-48">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between border-blue-600 text-blue-700 hover:bg-blue-50">
+                      <span>Exporter</span>
+                      <ChevronDownIcon className="ml-2 h-4 w-4 text-blue-600" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-56 bg-blue-50 text-blue-900 border border-blue-100">
+                    <div className="flex flex-col">
+                      <Button variant="ghost" className="justify-start text-blue-700 hover:bg-blue-100" onClick={exportToPDF}>Exporter par Filter (PDF)</Button>
+                      <Button variant="ghost" className="justify-start text-blue-700 hover:bg-blue-100" onClick={exportToExcel}>Exporter par filter (Excel)</Button>
+                      <Button variant="ghost" className="justify-start text-blue-700 hover:bg-blue-100" onClick={exporttoPDFbySubsidiary}>Exporter par filiale (PDF)</Button>
+                      <Button variant="ghost" className="justify-start text-blue-700 hover:bg-blue-100" onClick={exportToExcelBySubsidiary}>Exporter par filiale (Excel)</Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </CardContent>      
           </Card>
       </div>
       <Card>
