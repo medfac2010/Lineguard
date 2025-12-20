@@ -41,6 +41,15 @@ export function registerUserRoutes(app: Express) {
 
   app.patch("/api/users/:id", async (req, res) => {
     try {
+      // Validate avatar size if provided (protect DB column limits)
+      if (typeof req.body.avatar === 'string') {
+        const byteLen = Buffer.byteLength(req.body.avatar, 'utf-8');
+        const MAX_BYTES = 60 * 1024; // 60 KB
+        if (byteLen > MAX_BYTES) {
+          return res.status(400).json({ error: `Avatar data too large (${Math.round(byteLen/1024)}KB). Max is ${MAX_BYTES/1024}KB.` });
+        }
+      }
+
       // Password will be hashed in storage.updateUser if provided
       const user = await storage.updateUser(Number(req.params.id), req.body);
       // Remove password from response for security
